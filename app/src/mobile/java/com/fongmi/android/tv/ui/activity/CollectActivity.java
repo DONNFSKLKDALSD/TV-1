@@ -38,6 +38,7 @@ import com.fongmi.android.tv.ui.custom.CustomListener;
 import com.fongmi.android.tv.ui.custom.ViewType;
 import com.fongmi.android.tv.ui.custom.dialog.SiteDialog;
 import com.fongmi.android.tv.utils.PauseThreadPoolExecutor;
+import com.fongmi.android.tv.utils.Prefers;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Utils;
 
@@ -52,7 +53,6 @@ import okhttp3.Response;
 
 public class CollectActivity extends BaseActivity implements SiteCallback, WordAdapter.OnClickListener, RecordAdapter.OnClickListener, CollectAdapter.OnClickListener, VodAdapter.OnClickListener {
 
-    private GridLayoutManager mGridLayoutManager;
     private PauseThreadPoolExecutor mExecutor;
     private ActivityCollectBinding mBinding;
     private CollectAdapter mCollectAdapter;
@@ -120,12 +120,9 @@ public class CollectActivity extends BaseActivity implements SiteCallback, WordA
         mBinding.collect.setAdapter(mCollectAdapter = new CollectAdapter(this));
         mBinding.recycler.setHasFixedSize(true);
         mBinding.recycler.setAdapter(mVodAdapter = new VodAdapter(this));
-        mBinding.recycler.setLayoutManager(mGridLayoutManager = new GridLayoutManager(this, 2));
         mBinding.wordRecycler.setHasFixedSize(true);
-        mBinding.wordRecycler.setLayoutManager(new GridLayoutManager(this, 2));
         mBinding.wordRecycler.setAdapter(mWordAdapter = new WordAdapter(this));
         mBinding.recordRecycler.setHasFixedSize(true);
-        mBinding.recordRecycler.setLayoutManager(new GridLayoutManager(this, 2));
         mBinding.recordRecycler.setAdapter(mRecordAdapter = new RecordAdapter(this));
         mVodAdapter.setSize(Product.getSpec(this, ResUtil.dp2px(64), 3));
     }
@@ -183,13 +180,7 @@ public class CollectActivity extends BaseActivity implements SiteCallback, WordA
 
     private void getHot() {
         mBinding.word.setText(R.string.search_hot);
-        OkHttp.newCall("https://api.web.360kan.com/v1/rank?cat=1").enqueue(new Callback() {
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                List<String> items = Hot.get(response.body().string());
-                App.post(() -> mWordAdapter.addAll(items));
-            }
-        });
+        mWordAdapter.addAll(Hot.get(Prefers.getHot()));
     }
 
     private void getSuggest(String text) {
@@ -205,9 +196,10 @@ public class CollectActivity extends BaseActivity implements SiteCallback, WordA
 
     private void switchView(View view) {
         boolean grid = mVodAdapter.getViewType() == ViewType.GRID;
+        GridLayoutManager manager = (GridLayoutManager) mBinding.recycler.getLayoutManager();
         mBinding.view.setImageResource(grid ? R.drawable.ic_view_grid : R.drawable.ic_view_list);
         mVodAdapter.setViewType(grid ? ViewType.LIST : ViewType.GRID);
-        mGridLayoutManager.setSpanCount(grid ? 1 : 2);
+        manager.setSpanCount(grid ? 1 : 2);
     }
 
     private void showAgent() {
